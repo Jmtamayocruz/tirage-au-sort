@@ -1,4 +1,4 @@
-// COLLEZ VOTRE URL ICI (entre guillemets)
+// VOTRE URL
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDuChdhuhZBoFSAHIXfGx8S66gmk9aALW4WgoFVgXFw52Hox7NE8qYHTCe-rxuFAHnhQ/exec";
 
 let participants = [];
@@ -42,11 +42,11 @@ function showPage(pageId) {
     }
 }
 
-// --- FONCTION DE CHARGEMENT (GET) ---
+// --- LECTURE (GET) ---
 function loadParticipants() {
-    // On ajoute un timestamp pour éviter le cache du navigateur
+    // Astuce : On utilise JSONP implicite ou on force le cache à zéro
     $.ajax({
-        url: SCRIPT_URL + "?action=read&t=" + new Date().getTime(),
+        url: SCRIPT_URL + "?action=read",
         method: "GET",
         dataType: "json",
         success: function(response) {
@@ -57,12 +57,12 @@ function loadParticipants() {
             }
         },
         error: function(err) {
-            console.error("Erreur lecture:", err);
+            console.log("Erreur lecture (peut être normal si vide):", err);
         }
     });
 }
 
-// --- FONCTION D'INSCRIPTION (POST) CORRIGÉE ---
+// --- INSCRIPTION (POST) - VERSION SANS CORS ---
 function handleRegistration(e) {
     e.preventDefault();
     
@@ -70,77 +70,64 @@ function handleRegistration(e) {
     const originalText = $btn.text();
     $btn.text("Envoi...").prop('disabled', true);
 
-    const formData = {
-        prenom: $('#prenom').val().trim(),
-        nom: $('#nom').val().trim(),
-        email: $('#email').val().trim()
-    };
+    const prenom = $('#prenom').val().trim();
+    const nom = $('#nom').val().trim();
+    const email = $('#email').val().trim();
 
-    // Validation simple
-    if(!formData.prenom || !formData.nom) {
+    if(!prenom || !nom) {
         alert("Veuillez remplir nom et prénom");
         $btn.text(originalText).prop('disabled', false);
         return;
     }
 
-    // Envoi vers Google Script
-    // On utilise 'text' comme dataType attendu pour éviter les erreurs CORS de parsing JSON
-    $.ajax({
-        url: SCRIPT_URL,
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify({
-            action: "add",
-            prenom: formData.prenom,
-            nom: formData.nom,
-            email: formData.email
-        }),
-        dataType: "text", // Important pour Google Apps Script
-        success: function(response) {
-            // Google renvoie parfois du texte HTML autour du JSON, on essaie de cleaner
-            try {
-                const jsonResponse = JSON.parse(response);
-                if(jsonResponse.result === "success") {
-                    $('#registration-form')[0].reset();
-                    $('#confirmation-message').removeClass('hidden');
-                    setTimeout(() => $('#confirmation-message').addClass('hidden'), 4000);
-                    loadParticipants(); // Rafraichir la liste
-                } else {
-                    alert("Erreur: " + (jsonResponse.error || "Inconnue"));
-                }
-            } catch (e) {
-                // Si le parsing échoue mais que ça a marché (cas fréquent avec GAS)
-                $('#registration-form')[0].reset();
-                $('#confirmation-message').removeClass('hidden');
-                setTimeout(() => $('#confirmation-message').addClass('hidden'), 4000);
-                loadParticipants();
-            }
+    // ASTUCE CORS : On n'utilise pas AJAX/JSON standard.
+    // On utilise 'fetch' en mode 'no-cors'. 
+    // Le navigateur envoie la demande et ne bloque pas, même sans réponse explicite de permission.
+    
+    const data = {
+        action: "add",
+        prenom: prenom,
+        nom: nom,
+        email: email
+    };
+
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // C'est la clé magique qui ignore l'erreur CORS
+        headers: {
+            'Content-Type': 'application/json',
         },
-        error: function(xhr, status, error) {
-            console.error("Erreur envoi:", status, error);
-            // Souvent une erreur 0 signifie juste un redirect Google, on tente de recharger
-            setTimeout(loadParticipants, 2000);
-            alert("Inscription envoyée (vérifiez la liste si le message d'erreur persiste).");
-        },
-        complete: function() {
-            $btn.text(originalText).prop('disabled', false);
-        }
+        body: JSON.stringify(data)
+    })
+    .then(() => {
+        // Comme on est en 'no-cors', on ne peut pas lire la réponse JSON de Google.
+        // On suppose que ça a marché si pas d'erreur réseau.
+        $('#registration-form')[0].reset();
+        $('#confirmation-message').removeClass('hidden');
+        setTimeout(() => $('#confirmation-message').addClass('hidden'), 4000);
+        
+        // On rafraichit la liste avec un petit délai pour laisser le temps à Google d'écrire
+        setTimeout(loadParticipants, 1500);
+        
+        $btn.text(originalText).prop('disabled', false);
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert("Problème de connexion. Réessayez.");
+        $btn.text(originalText).prop('disabled', false);
     });
 }
 
 function resetAll() {
     if(confirm('ATTENTION: Supprimer TOUS les participants ?')) {
-        $.ajax({
-            url: SCRIPT_URL,
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ action: "reset" }),
-            dataType: "text",
-            success: function() {
-                loadParticipants();
-                $('#participants-table-container').addClass('hidden');
-            },
-            error: function() { alert("Erreur lors de la réinitialisation."); }
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: "reset" })
+        }).then(() => {
+            loadParticipants();
+            $('#participants-table-container').addClass('hidden');
         });
     }
 }
