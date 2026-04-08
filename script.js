@@ -1,20 +1,22 @@
-// Variables globales
-let participants = JSON.parse(localStorage.getItem('participants')) || [];
+// CONFIGURATION : COLLEZ VOTRE URL GOOGLE SCRIPT CI-DESSOUS
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDuChdhuhZBoFSAHIXfGx8S66gmk9aALW4WgoFVgXFw52Hox7NE8qYHTCe-rxuFAHnhQ/exec"; 
+
+let participants = [];
 let currentRotation = 0;
 let isSpinning = false;
 
-// Couleurs pour la roue (Palette complémentaire Bordeaux/Crème/Or)
 const wheelColors = [
     '#800020', '#FBF8F3', '#D4AF37', '#A52A2A', '#F5DEB3', 
     '#5a0016', '#C0C0C0', '#8B4513', '#FFD700', '#CD5C5C'
 ];
 
 $(document).ready(function() {
-    // Gestion de la navigation
+    // Charger les données au démarrage
+    loadParticipants();
+
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
         showPage('admin-page');
-        updateParticipantsTable();
     } else {
         showPage('registration-page');
     }
@@ -36,30 +38,83 @@ function showPage(pageId) {
     $('.page').removeClass('active').addClass('hidden');
     $('#' + pageId).removeClass('hidden').addClass('active');
     
-    if(pageId === 'admin-page') updateParticipantsTable();
-    if(pageId === 'draw-page') drawWheel(); // Redessiner la roue au cas où
+    if(pageId === 'admin-page' || pageId === 'draw-page') {
+        loadParticipants(); // Rafraichir les données à chaque changement de page
+    }
 }
 
-// --- INSCRIPTION ---
+// --- COMMUNICATION AVEC GOOGLE SHEETS ---
+
+function loadParticipants() {
+    // Affiche un petit chargement si besoin
+    $.ajax({
+        url: SCRIPT_URL + "?action=read",
+        method: "GET",
+        dataType: "json",
+        success: function(response) {
+            if(response.result === "success") {
+                participants = response.data;
+                updateParticipantsTable();
+                if(!isSpinning) drawWheel(); // Redessiner la roue si on ne tourne pas
+            }
+        },
+        error: function(err) {
+            console.error("Erreur de chargement", err);
+            alert("Erreur de connexion à la base de données.");
+        }
+    });
+}
+
 function handleRegistration(e) {
     e.preventDefault();
-    const prenom = $('#prenom').val().trim();
-    const nom = $('#nom').val().trim();
-    const email = $('#email').val().trim();
-    
-    participants.push({
-        id: participants.length + 1,
-        prenom, nom, email,
-        timestamp: new Date().toISOString()
+    const btn = $(e.target).find('button');
+    const originalText = btn.text();
+    btn.text("Envoi en cours...").prop('disabled', true);
+
+    const data = {
+        prenom: $('#prenom').val().trim(),
+        nom: $('#nom').val().trim(),
+        email: $('#email').val().trim()
+    };
+
+    $.ajax({
+        url: SCRIPT_URL,
+        method: "POST",
+        data: JSON.stringify({ action: "add", ...data }),
+        success: function(response) {
+            $('#registration-form')[0].reset();
+            $('#confirmation-message').removeClass('hidden');
+            setTimeout(() => $('#confirmation-message').addClass('hidden'), 3000);
+            
+            // Rafraichir les données
+            loadParticipants();
+        },
+        error: function(err) {
+            alert("Erreur lors de l'inscription. Réessayez.");
+        },
+        complete: function() {
+            btn.text(originalText).prop('disabled', false);
+        }
     });
-    localStorage.setItem('participants', JSON.stringify(participants));
-    
-    $('#registration-form')[0].reset();
-    $('#confirmation-message').removeClass('hidden');
-    setTimeout(() => $('#confirmation-message').addClass('hidden'), 3000);
 }
 
-// --- ADMIN ---
+function resetAll() {
+    if(confirm('ATTENTION: Supprimer TOUS les participants de la base de données ?')) {
+        $.ajax({
+            url: SCRIPT_URL,
+            method: "POST",
+            data: JSON.stringify({ action: "reset" }),
+            success: function() {
+                loadParticipants();
+                $('#participants-table-container').addClass('hidden');
+            },
+            error: function() { alert("Erreur lors de la réinitialisation."); }
+        });
+    }
+}
+
+// --- AFFICHAGE & ROUE ---
+
 function toggleParticipantsTable() {
     $('#participants-table-container').toggleClass('hidden');
     if (!$('#participants-table-container').hasClass('hidden')) {
@@ -78,24 +133,14 @@ function updateParticipantsTable() {
     });
 }
 
-function resetAll() {
-    if(confirm('Supprimer TOUS les participants ?')) {
-        participants = [];
-        localStorage.removeItem('participants');
-        updateParticipantsTable();
-        $('#participants-table-container').addClass('hidden');
-    }
-}
-
-// --- ROUE & TIRAGE ---
 function startDraw() {
     if (participants.length < 2) {
-        alert('Il faut au moins 2 participants pour lancer la roue !');
+        alert('Il faut au moins 2 participants !');
         return;
     }
     if (isSpinning) return;
     
-    $('#start-spin-btn').addClass('hidden'); // Cacher le bouton pendant le spin
+    $('#start-spin-btn').addClass('hidden');
     isSpinning = true;
     spinWheel();
 }
@@ -110,7 +155,8 @@ function drawWheel() {
     const centerY = height / 2;
     const radius = Math.min(centerX, centerY) - 10;
     
-    // Si pas de participants, roue vide ou grise
+    ctx.clearRect(0, 0, width, height);
+
     if (participants.length === 0) {
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
@@ -133,16 +179,14 @@ function drawWheel() {
         ctx.fillStyle = wheelColors[index % wheelColors.length];
         ctx.fill();
         ctx.stroke();
-        // PAS DE TEXTE ici comme demandé
     });
 }
 
 function spinWheel() {
-    const spinDuration = 15000; // 15 secondes
+    const spinDuration = 15000;
     const startTime = Date.now();
-    const totalRotations = 15; // Plus de rotations pour l'effet
+    const totalRotations = 15;
     const startRotation = currentRotation;
-    // Aléatoire final
     const targetRotation = startRotation + (totalRotations * 2 * Math.PI) + (Math.random() * 2 * Math.PI);
     
     function animate() {
@@ -180,25 +224,22 @@ function drawWheelWithRotation(rotation) {
 function showWinner(finalRotation) {
     const sliceAngle = (2 * Math.PI) / participants.length;
     const normalizedRotation = finalRotation % (2 * Math.PI);
-    // Calcul de l'index gagnant basé sur la flèche en haut (3PI/2)
     const pointerAngle = (3 * Math.PI / 2 - normalizedRotation + 2 * Math.PI) % (2 * Math.PI);
     const winningIndex = Math.floor(pointerAngle / sliceAngle) % participants.length;
     
     const winner = participants[winningIndex];
     
-    // Affichage Pop-up
     $('#winner-name').text(`${winner.prenom} ${winner.nom}`);
     $('#winner-overlay').removeClass('hidden');
     
-    // Confettis (optionnel, gardé simple)
     createConfetti();
 }
 
 function closeWinnerOverlay() {
     $('#winner-overlay').addClass('hidden');
     $('#start-spin-btn').removeClass('hidden');
-    currentRotation = 0; // Reset visuel si besoin
-    drawWheel(); // Redessiner droit
+    currentRotation = 0;
+    drawWheel();
 }
 
 function createConfetti() {
