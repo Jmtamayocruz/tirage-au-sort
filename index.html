@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo - Tirage au sort</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Bibliothèque jQuery (nécessaire pour le script) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <!-- Page d'inscription (Visible par défaut) -->
+        
+        <!-- PAGE 1: Formulaire d'inscription -->
         <div id="registration-page" class="page active">
             <h1>Inscrivez-vous au concours</h1>
             <form id="registration-form">
@@ -25,45 +26,62 @@
                     <label for="email">E-mail</label>
                     <input type="email" id="email" name="email" required>
                 </div>
-                <button type="submit" class="btn-submit">S'inscrire</button>
+                <button type="submit" class="btn-submit">Valider l'inscription</button>
             </form>
             <p id="confirmation-message" class="hidden">¡Inscrito con éxito!</p>
         </div>
 
-        <!-- Page administrateur (Cachée par défaut) -->
+        <!-- PAGE 2: Administration -->
         <div id="admin-page" class="page hidden">
             <h1>Panel de Administración</h1>
-            <div class="admin-controls">
-                <button id="show-participants-btn" class="btn-secondary">Voir les participants</button>
-                <button id="start-draw-btn" class="btn-primary">Lancer le tirage</button>
-                <button id="reset-btn" class="btn-danger">Réinitialiser</button>
-            </div>
+            <p class="subtitle">Gestion des participants</p>
             
-            <div id="participants-table" class="hidden">
-                <h2>Participants (<span id="participant-count">0</span>)</h2>
-                <table>
-                    <thead>
-                        <tr><th>#</th><th>Prénom</th><th>Nom</th><th>E-mail</th></tr>
-                    </thead>
-                    <tbody id="participants-body"></tbody>
-                </table>
+            <div class="admin-controls">
+                <button id="toggle-participants-btn" class="btn-secondary">Voir/Masquer la liste</button>
+                <button id="go-to-draw-btn" class="btn-primary">Aller à l'écran de tirage</button>
+                <button id="reset-btn" class="btn-danger">Tout effacer</button>
             </div>
 
-            <div id="wheel-container" class="hidden">
-                <div class="wheel-wrapper">
-                    <canvas id="wheel" width="400" height="400"></canvas>
-                    <div class="pointer"></div>
+            <div id="participants-table-container" class="hidden">
+                <h2>Participants (<span id="participant-count">0</span>)</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>Prénom</th><th>Nom</th><th>E-mail</th></tr>
+                        </thead>
+                        <tbody id="participants-body"></tbody>
+                    </table>
                 </div>
-                <div id="winner-display" class="hidden">
-                    <h2 class="winner-text">El ganador es: <span id="winner-name"></span></h2>
-                </div>
-                <button id="close-wheel-btn" class="btn-secondary hidden">Fermer</button>
             </div>
         </div>
-    </div>
 
-    <!-- Lien vers votre fichier JS personnalisé -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- PAGE 3: Écran de Tirage (Nouveau) -->
+        <div id="draw-page" class="page hidden">
+            <div class="draw-header">
+                <h1>Tirage au sort</h1>
+                <button id="back-to-admin-btn" class="btn-small">Retour Admin</button>
+            </div>
+
+            <div class="wheel-scene">
+                <div class="wheel-wrapper">
+                    <canvas id="wheel" width="500" height="500"></canvas>
+                    <div class="pointer"></div>
+                </div>
+                
+                <button id="start-spin-btn" class="btn-huge">LANCER LA ROUE !</button>
+            </div>
+
+            <!-- Pop-up Gagnant (Overlay) -->
+            <div id="winner-overlay" class="hidden">
+                <div class="winner-card">
+                    <h2 class="winner-title">El ganador es:</h2>
+                    <div class="winner-name-display" id="winner-name"></div>
+                    <button id="close-winner-btn" class="btn-secondary">Fermer</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
