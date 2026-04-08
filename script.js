@@ -187,7 +187,7 @@ function showWinner(finalRotation) {
     const winner = participants[winningIndex];
     
     // Affichage Pop-up
-    $('#winner-name').text(`${winner.prenom} ${winner.nom}`).toUpperCase();
+    $('#winner-name').text(`${winner.prenom} ${winner.nom}`);
     $('#winner-overlay').removeClass('hidden');
     
     // Confettis (optionnel, gardé simple)
