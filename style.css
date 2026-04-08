@@ -1,10 +1,12 @@
+/* ... (Gardez le début du CSS précédent jusqu'à .draw-header) ... */
+
 :root {
-    --primary: #800020;       /* Bordeaux */
-    --bg-color: #FBF8F3;      /* Crème */
+    --primary: #800020;
+    --bg-color: #FBF8F3;
     --text-color: #2c2c2c;
     --white: #ffffff;
-    --accent: #D4AF37;        /* Or complémentaire pour les touches */
-    --secondary: #5a0016;     /* Bordeaux plus foncé pour hover */
+    --accent: #D4AF37;
+    --secondary: #5a0016;
     --light-border: #e0dcd5;
 }
 
@@ -31,7 +33,7 @@ body {
     max-width: 900px;
     text-align: center;
     position: relative;
-    overflow: hidden;
+    overflow: visible; /* Changé pour laisser dépasser le pop-up si besoin */
 }
 
 .page { display: none; animation: fadeIn 0.5s; }
@@ -42,7 +44,6 @@ h1 { color: var(--primary); margin-bottom: 25px; font-size: 2.2em; }
 h2 { color: var(--secondary); margin: 20px 0; font-size: 1.5em; }
 .subtitle { color: #666; margin-bottom: 20px; }
 
-/* Formulaires */
 .form-group { margin-bottom: 20px; text-align: left; }
 label { display: block; margin-bottom: 8px; color: var(--primary); font-weight: bold; }
 input {
@@ -53,7 +54,6 @@ input {
 }
 input:focus { outline: none; border-color: var(--primary); }
 
-/* Boutons */
 button {
     padding: 12px 25px; border: none; border-radius: 8px;
     font-size: 16px; font-weight: bold; cursor: pointer;
@@ -70,20 +70,23 @@ button {
 .btn-danger { background-color: #a00; color: var(--white); }
 .btn-danger:hover { background-color: #800; }
 
+/* CORRECTION BOUTON ROUE */
 .btn-huge {
-    margin-top: 30px;
+    margin-top: 40px; /* Plus de marge pour écarter de la roue */
     padding: 20px 50px;
     font-size: 24px;
     background-color: var(--accent);
     color: var(--primary);
     box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+    position: relative;
+    z-index: 20; /* Toujours au-dessus */
+    display: inline-block;
 }
 .btn-huge:hover { background-color: #b5952f; transform: scale(1.05); }
 
 .btn-small { padding: 8px 15px; font-size: 14px; background: transparent; border: 1px solid var(--primary); color: var(--primary); }
 .btn-small:hover { background: var(--primary); color: var(--white); }
 
-/* Tableau Responsive */
 .table-responsive {
     width: 100%; overflow-x: auto; margin-top: 20px;
     border: 1px solid var(--light-border); border-radius: 8px;
@@ -93,71 +96,81 @@ th { background-color: var(--primary); color: var(--white); padding: 12px; }
 td { padding: 10px; border-bottom: 1px solid var(--light-border); text-align: left; }
 tr:nth-child(even) { background-color: var(--bg-color); }
 
-/* Roue et Écran de tirage */
+/* CORRECTION ROUE & CONTENEUR */
 .draw-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.wheel-scene { position: relative; display: flex; flex-direction: column; align-items: center; }
+
+.wheel-scene { 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    min-height: 600px; /* HAUTEUR FORCÉE pour éviter l'écrasement */
+    justify-content: flex-start;
+}
 
 .wheel-wrapper {
     position: relative;
-    width: 400px; height: 400px;
-    margin: 0 auto;
-    /* Correction du centrage */
-    display: flex; justify-content: center; align-items: center;
+    width: 450px; /* Légèrement plus grand */
+    height: 450px;
+    margin: 20px auto;
+    z-index: 10;
 }
 
 #wheel {
     border-radius: 50%;
     box-shadow: 0 0 20px rgba(0,0,0,0.2);
     border: 5px solid var(--primary);
+    width: 100%;
+    height: 100%;
 }
 
 .pointer {
     position: absolute;
-    top: -15px; left: 50%;
+    top: -20px; left: 50%;
     transform: translateX(-50%);
     width: 0; height: 0;
     border-left: 25px solid transparent;
     border-right: 25px solid transparent;
-    border-top: 50px solid var(--accent); /* Flèche dorée */
-    z-index: 10;
+    border-top: 50px solid var(--accent);
+    z-index: 30; /* Au-dessus de la roue */
     filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
 }
 
-/* Pop-up Gagnant Overlay */
+/* POP-UP GAGNANT */
 #winner-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(128, 0, 32, 0.9); /* Fond bordeaux transparent */
+    background: rgba(128, 0, 32, 0.95); /* Plus opaque */
     display: flex; justify-content: center; align-items: center;
-    z-index: 1000;
+    z-index: 9999; /* TOUT EN DESSUS */
     animation: fadeIn 0.5s;
 }
 
 .winner-card {
     background: var(--white);
-    padding: 40px;
+    padding: 50px;
     border-radius: 20px;
     text-align: center;
-    border: 5px solid var(--accent);
+    border: 8px solid var(--accent);
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     max-width: 90%;
     animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.winner-title { font-size: 2em; color: var(--primary); margin-bottom: 20px; }
+.winner-title { font-size: 2.5em; color: var(--primary); margin-bottom: 20px; text-transform: uppercase; }
 .winner-name-display {
-    font-size: 3.5em; font-weight: bold; color: var(--text-color);
+    font-size: 4em; font-weight: bold; color: var(--text-color);
     margin: 20px 0; line-height: 1.2;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-/* Responsive Mobile */
 @media (max-width: 600px) {
     .container { padding: 20px; }
     h1 { font-size: 1.8em; }
     .wheel-wrapper { width: 300px; height: 300px; }
-    #wheel { width: 300px; height: 300px; }
-    .winner-name-display { font-size: 2em; }
+    .wheel-scene { min-height: 450px; }
+    .winner-name-display { font-size: 2.5em; }
     .draw-header { flex-direction: column; gap: 10px; }
 }
