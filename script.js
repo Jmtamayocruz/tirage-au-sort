@@ -1,36 +1,18 @@
-// CONFIGURATION GITHUB
-const GITHUB_TOKEN = "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"; 
-const GITHUB_USER = "Jmtamayocruz"; // Ex: jmtamayocruz
-const GITHUB_REPO = "tirage-au-sort";
-const GITHUB_BRANCH = "main"; // ou 'master' selon votre dépôt
-const DATA_FILE = "data.json";
+// COLLEZ VOTRE NOUVELLE URL GOOGLE SCRIPT ICI
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw2rzueLuVv-3DymTIX1w0H1XmFqLaYmDhe05b0_I5ExEYJHZvBT5F2Lj9icU_iTTSIug/exec"; 
 
 let participants = [];
 let currentRotation = 0;
 let isSpinning = false;
-let isUpdating = false; // Évite les conflits d'écriture
 
-const wheelColors = [
-    '#800020', '#FBF8F3', '#D4AF37', '#A52A2A', '#F5DEB3', 
-    '#5a0016', '#C0C0C0', '#8B4513', '#FFD700', '#CD5C5C'
-];
+const wheelColors = ['#800020', '#FBF8F3', '#D4AF37', '#A52A2A', '#F5DEB3', '#5a0016', '#C0C0C0', '#8B4513', '#FFD700', '#CD5C5C'];
 
 $(document).ready(function() {
     loadParticipants();
-    
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('admin') === 'true') {
-        showPage('admin-page');
-    } else {
-        showPage('registration-page');
-    }
-
+    if (urlParams.get('admin') === 'true') showPage('admin-page');
+    else showPage('registration-page');
     setupEventListeners();
-    
-    // Rafraichir automatiquement toutes les 5 secondes si on est sur la page Admin ou Tirage
-    setInterval(() => {
-        if(!isSpinning && !isUpdating) loadParticipants();
-    }, 5000);
 });
 
 function setupEventListeners() {
@@ -49,129 +31,76 @@ function showPage(pageId) {
     if(pageId === 'admin-page' || pageId === 'draw-page') loadParticipants();
 }
 
-// --- LECTURE ÉCRITURE GITHUB API ---
-
-async function loadParticipants() {
-    if(isUpdating) return;
-    try {
-        // On ajoute un timestamp pour forcer GitHub à ne pas donner une version cachée
-        const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${DATA_FILE}?t=${new Date().getTime()}`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-
-        if (!response.ok) throw new Error("Erreur lecture");
-        
-        const data = await response.json();
-        // Le contenu est en Base64, on le décode
-        const content = atob(data.content);
-        participants = JSON.parse(content);
-        
-        updateParticipantsTable();
-        if(!isSpinning) drawWheel();
-        
-    } catch (error) {
-        console.error("Erreur chargement:", error);
-    }
+function loadParticipants() {
+    // On utilise fetch simple
+    fetch(SCRIPT_URL + "?action=read")
+    .then(res => res.json())
+    .then(data => {
+        if(data.result === "success") {
+            participants = data.data;
+            updateParticipantsTable();
+            if(!isSpinning) drawWheel();
+        }
+    })
+    .catch(err => console.error("Erreur lecture:", err));
 }
 
-async function handleRegistration(e) {
+function handleRegistration(e) {
     e.preventDefault();
-    if(isUpdating) { alert("Mise à jour en cours, patientez..."); return; }
-    
     const $btn = $('#registration-form button[type="submit"]');
     const originalText = $btn.text();
     $btn.text("Envoi...").prop('disabled', true);
-    isUpdating = true;
 
-    const newParticipant = {
-        id: Date.now(), // ID unique basé sur l'heure
+    const data = {
+        action: "add",
         prenom: $('#prenom').val().trim(),
         nom: $('#nom').val().trim(),
-        email: $('#email').val().trim(),
-        timestamp: new Date().toISOString()
+        email: $('#email').val().trim()
     };
 
-    try {
-        // 1. Récupérer le fichier actuel et son "sha" (nécessaire pour modifier)
-        const urlGet = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${DATA_FILE}`;
-        const resGet = await fetch(urlGet, {
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
-        });
-        const fileData = await resGet.json();
-        
-        // 2. Ajouter le nouveau participant
-        participants.push(newParticipant);
-        const newContent = JSON.stringify(participants);
-        
-        // 3. Envoyer la modification (PUT)
-        const urlPut = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${DATA_FILE}`;
-        const resPut = await fetch(urlPut, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: "Nouveau participant: " + newParticipant.prenom,
-                content: btoa(newContent), // Encoder en Base64
-                sha: fileData.sha // Version actuelle pour éviter conflits
-            })
-        });
+    if(!data.prenom || !data.nom) {
+        alert("Remplissez nom et prénom");
+        $btn.text(originalText).prop('disabled', false);
+        return;
+    }
 
-        if (!resPut.ok) throw new Error("Erreur écriture");
-
+    // ASTUCE : no-cors permet de contourner le blocage GitHub -> Google
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(() => {
         $('#registration-form')[0].reset();
         $('#confirmation-message').removeClass('hidden');
         setTimeout(() => $('#confirmation-message').addClass('hidden'), 3000);
-        loadParticipants();
-
-    } catch (error) {
-        console.error(error);
-        alert("Erreur lors de l'inscription. Vérifiez la console (F12).");
-    } finally {
-        isUpdating = false;
+        setTimeout(loadParticipants, 2000); // Rafraichir après 2s
         $btn.text(originalText).prop('disabled', false);
-    }
+    })
+    .catch(err => {
+        alert("Erreur connexion");
+        $btn.text(originalText).prop('disabled', false);
+    });
 }
 
-async function resetAll() {
-    if(!confirm('Supprimer TOUS les participants ?')) return;
-    if(isUpdating) return;
-    isUpdating = true;
-
-    try {
-        const urlGet = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${DATA_FILE}`;
-        const resGet = await fetch(urlGet, { headers: { 'Authorization': `token ${GITHUB_TOKEN}` } });
-        const fileData = await resGet.json();
-
-        const urlPut = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${DATA_FILE}`;
-        await fetch(urlPut, {
-            method: 'PUT',
-            headers: { 'Authorization': `token ${GITHUB_TOKEN}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: "Reset complet",
-                content: btoa("[]"), // Tableau vide
-                sha: fileData.sha
-            })
-        });
+function resetAll() {
+    if(!confirm('Tout effacer ?')) return;
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: "reset" })
+    }).then(() => {
         loadParticipants();
         $('#participants-table-container').addClass('hidden');
-    } catch (e) {
-        alert("Erreur reset");
-    } finally {
-        isUpdating = false;
-    }
+    });
 }
 
-// --- LOGIQUE ROUE & AFFICHAGE (Inchangée) ---
+// --- LOGIQUE ROUE (Inchangée) ---
 function toggleParticipantsTable() { $('#participants-table-container').toggleClass('hidden'); if (!$('#participants-table-container').hasClass('hidden')) updateParticipantsTable(); }
 function updateParticipantsTable() { $('#participants-body').empty(); $('#participant-count').text(participants.length); $.each(participants, function(i, p) { $('#participants-body').append(`<tr><td>${i+1}</td><td>${p.prenom}</td><td>${p.nom}</td><td>${p.email}</td></tr>`); }); }
-function startDraw() { if (participants.length < 2) { alert('Il faut au moins 2 participants !'); return; } if (isSpinning) return; $('#start-spin-btn').addClass('hidden'); isSpinning = true; spinWheel(); }
+function startDraw() { if (participants.length < 2) { alert('Il faut 2 participants min !'); return; } if (isSpinning) return; $('#start-spin-btn').addClass('hidden'); isSpinning = true; spinWheel(); }
 function drawWheel() { const canvas = $('#wheel')[0]; if (!canvas) return; const ctx = canvas.getContext('2d'); const w = canvas.width; const h = canvas.height; const r = Math.min(w, h)/2 - 10; ctx.clearRect(0,0,w,h); if(participants.length===0) { ctx.beginPath(); ctx.arc(w/2,h/2,r,0,Math.PI*2); ctx.fillStyle='#eee'; ctx.fill(); return; } const slice = (Math.PI*2)/participants.length; $.each(participants, function(i){ ctx.beginPath(); ctx.moveTo(w/2,h/2); ctx.arc(w/2,h/2,r,i*slice,(i+1)*slice); ctx.closePath(); ctx.fillStyle=wheelColors[i%wheelColors.length]; ctx.fill(); ctx.stroke(); }); }
 function spinWheel() { const dur=15000, start=Date.now(), rotTotal=15, rotStart=currentRotation, rotTarget=rotStart+(rotTotal*Math.PI*2)+(Math.random()*Math.PI*2); function anim(){ const p=Math.min((Date.now()-start)/dur,1), ease=1-Math.pow(1-p,3); currentRotation=rotStart+(rotTarget-rotStart)*ease; drawWheelWithRotation(currentRotation); if(p<1) requestAnimationFrame(anim); else { isSpinning=false; showWinner(currentRotation); } } anim(); }
 function drawWheelWithRotation(rot) { const c=$('#wheel')[0], x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height); x.save(); x.translate(c.width/2,c.height/2); x.rotate(rot); x.translate(-c.width/2,-c.height/2); drawWheel(); x.restore(); }
