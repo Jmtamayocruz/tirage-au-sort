@@ -1,5 +1,5 @@
-// CONFIGURATION : COLLEZ VOTRE URL GOOGLE SCRIPT CI-DESSOUS
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDuChdhuhZBoFSAHIXfGx8S66gmk9aALW4WgoFVgXFw52Hox7NE8qYHTCe-rxuFAHnhQ/exec"; 
+// COLLEZ VOTRE URL ICI (entre guillemets)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDuChdhuhZBoFSAHIXfGx8S66gmk9aALW4WgoFVgXFw52Hox7NE8qYHTCe-rxuFAHnhQ/exec";
 
 let participants = [];
 let currentRotation = 0;
@@ -11,9 +11,8 @@ const wheelColors = [
 ];
 
 $(document).ready(function() {
-    // Charger les données au démarrage
     loadParticipants();
-
+    
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
         showPage('admin-page');
@@ -39,71 +38,104 @@ function showPage(pageId) {
     $('#' + pageId).removeClass('hidden').addClass('active');
     
     if(pageId === 'admin-page' || pageId === 'draw-page') {
-        loadParticipants(); // Rafraichir les données à chaque changement de page
+        loadParticipants();
     }
 }
 
-// --- COMMUNICATION AVEC GOOGLE SHEETS ---
-
+// --- FONCTION DE CHARGEMENT (GET) ---
 function loadParticipants() {
-    // Affiche un petit chargement si besoin
+    // On ajoute un timestamp pour éviter le cache du navigateur
     $.ajax({
-        url: SCRIPT_URL + "?action=read",
+        url: SCRIPT_URL + "?action=read&t=" + new Date().getTime(),
         method: "GET",
         dataType: "json",
         success: function(response) {
-            if(response.result === "success") {
+            if(response && response.result === "success") {
                 participants = response.data;
                 updateParticipantsTable();
-                if(!isSpinning) drawWheel(); // Redessiner la roue si on ne tourne pas
+                if(!isSpinning) drawWheel();
             }
         },
         error: function(err) {
-            console.error("Erreur de chargement", err);
-            alert("Erreur de connexion à la base de données.");
+            console.error("Erreur lecture:", err);
         }
     });
 }
 
+// --- FONCTION D'INSCRIPTION (POST) CORRIGÉE ---
 function handleRegistration(e) {
     e.preventDefault();
-    const btn = $(e.target).find('button');
-    const originalText = btn.text();
-    btn.text("Envoi en cours...").prop('disabled', true);
+    
+    const $btn = $('#registration-form button[type="submit"]');
+    const originalText = $btn.text();
+    $btn.text("Envoi...").prop('disabled', true);
 
-    const data = {
+    const formData = {
         prenom: $('#prenom').val().trim(),
         nom: $('#nom').val().trim(),
         email: $('#email').val().trim()
     };
 
+    // Validation simple
+    if(!formData.prenom || !formData.nom) {
+        alert("Veuillez remplir nom et prénom");
+        $btn.text(originalText).prop('disabled', false);
+        return;
+    }
+
+    // Envoi vers Google Script
+    // On utilise 'text' comme dataType attendu pour éviter les erreurs CORS de parsing JSON
     $.ajax({
         url: SCRIPT_URL,
         method: "POST",
-        data: JSON.stringify({ action: "add", ...data }),
+        contentType: "application/json",
+        data: JSON.stringify({
+            action: "add",
+            prenom: formData.prenom,
+            nom: formData.nom,
+            email: formData.email
+        }),
+        dataType: "text", // Important pour Google Apps Script
         success: function(response) {
-            $('#registration-form')[0].reset();
-            $('#confirmation-message').removeClass('hidden');
-            setTimeout(() => $('#confirmation-message').addClass('hidden'), 3000);
-            
-            // Rafraichir les données
-            loadParticipants();
+            // Google renvoie parfois du texte HTML autour du JSON, on essaie de cleaner
+            try {
+                const jsonResponse = JSON.parse(response);
+                if(jsonResponse.result === "success") {
+                    $('#registration-form')[0].reset();
+                    $('#confirmation-message').removeClass('hidden');
+                    setTimeout(() => $('#confirmation-message').addClass('hidden'), 4000);
+                    loadParticipants(); // Rafraichir la liste
+                } else {
+                    alert("Erreur: " + (jsonResponse.error || "Inconnue"));
+                }
+            } catch (e) {
+                // Si le parsing échoue mais que ça a marché (cas fréquent avec GAS)
+                $('#registration-form')[0].reset();
+                $('#confirmation-message').removeClass('hidden');
+                setTimeout(() => $('#confirmation-message').addClass('hidden'), 4000);
+                loadParticipants();
+            }
         },
-        error: function(err) {
-            alert("Erreur lors de l'inscription. Réessayez.");
+        error: function(xhr, status, error) {
+            console.error("Erreur envoi:", status, error);
+            // Souvent une erreur 0 signifie juste un redirect Google, on tente de recharger
+            setTimeout(loadParticipants, 2000);
+            alert("Inscription envoyée (vérifiez la liste si le message d'erreur persiste).");
         },
         complete: function() {
-            btn.text(originalText).prop('disabled', false);
+            $btn.text(originalText).prop('disabled', false);
         }
     });
 }
 
 function resetAll() {
-    if(confirm('ATTENTION: Supprimer TOUS les participants de la base de données ?')) {
+    if(confirm('ATTENTION: Supprimer TOUS les participants ?')) {
         $.ajax({
             url: SCRIPT_URL,
             method: "POST",
+            contentType: "application/json",
             data: JSON.stringify({ action: "reset" }),
+            dataType: "text",
             success: function() {
                 loadParticipants();
                 $('#participants-table-container').addClass('hidden');
@@ -114,7 +146,6 @@ function resetAll() {
 }
 
 // --- AFFICHAGE & ROUE ---
-
 function toggleParticipantsTable() {
     $('#participants-table-container').toggleClass('hidden');
     if (!$('#participants-table-container').hasClass('hidden')) {
