@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo - Tirage au sort</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Bibliothèque jQuery (nécessaire pour le script) -->
+</head>
+<body>
+    <div class="container">
+        <!-- Page d'inscription (Visible par défaut) -->
+        <div id="registration-page" class="page active">
+            <h1>Inscrivez-vous au concours</h1>
+            <form id="registration-form">
+                <div class="form-group">
+                    <label for="prenom">Prénom</label>
+                    <input type="text" id="prenom" name="prenom" required>
+                </div>
+                <div class="form-group">
+                    <label for="nom">Nom</label>
+                    <input type="text" id="nom" name="nom" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <button type="submit" class="btn-submit">S'inscrire</button>
+            </form>
+            <p id="confirmation-message" class="hidden">¡Inscrito con éxito!</p>
+        </div>
+
+        <!-- Page administrateur (Cachée par défaut) -->
+        <div id="admin-page" class="page hidden">
+            <h1>Panel de Administración</h1>
+            <div class="admin-controls">
+                <button id="show-participants-btn" class="btn-secondary">Voir les participants</button>
+                <button id="start-draw-btn" class="btn-primary">Lancer le tirage</button>
+                <button id="reset-btn" class="btn-danger">Réinitialiser</button>
+            </div>
+            
+            <div id="participants-table" class="hidden">
+                <h2>Participants (<span id="participant-count">0</span>)</h2>
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Prénom</th><th>Nom</th><th>E-mail</th></tr>
+                    </thead>
+                    <tbody id="participants-body"></tbody>
+                </table>
+            </div>
+
+            <div id="wheel-container" class="hidden">
+                <div class="wheel-wrapper">
+                    <canvas id="wheel" width="400" height="400"></canvas>
+                    <div class="pointer"></div>
+                </div>
+                <div id="winner-display" class="hidden">
+                    <h2 class="winner-text">El ganador es: <span id="winner-name"></span></h2>
+                </div>
+                <button id="close-wheel-btn" class="btn-secondary hidden">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lien vers votre fichier JS personnalisé -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
