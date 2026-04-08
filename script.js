@@ -1,127 +1,127 @@
-// Variables globales (Noms conservés identiquement)
+// Variables globales
 let participants = JSON.parse(localStorage.getItem('participants')) || [];
 let currentRotation = 0;
 let isSpinning = false;
 
-// Cache DOM elements pour performance (équivalent des const précédents)
-const $registrationPage = $('#registration-page');
-const $adminPage = $('#admin-page');
-const $registrationForm = $('#registration-form');
-const $confirmationMessage = $('#confirmation-message');
-const $participantsTable = $('#participants-table');
-const $participantsBody = $('#participants-body');
-const $participantCount = $('#participant-count');
-const $wheelContainer = $('#wheel-container');
-const $wheelCanvas = $('#wheel');
-const $winnerDisplay = $('#winner-display');
-const $winnerName = $('#winner-name');
-const $closeWheelBtn = $('#close-wheel-btn');
-const $showParticipantsBtn = $('#show-participants-btn');
-const $startDrawBtn = $('#start-draw-btn');
-const $resetBtn = $('#reset-btn');
+// Couleurs pour la roue (Palette complémentaire Bordeaux/Crème/Or)
+const wheelColors = [
+    '#800020', '#FBF8F3', '#D4AF37', '#A52A2A', '#F5DEB3', 
+    '#5a0016', '#C0C0C0', '#8B4513', '#FFD700', '#CD5C5C'
+];
 
 $(document).ready(function() {
-    // Vérification mode admin
+    // Gestion de la navigation
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
-        showAdminPage();
+        showPage('admin-page');
+        updateParticipantsTable();
+    } else {
+        showPage('registration-page');
     }
-    
+
     setupEventListeners();
 });
 
 function setupEventListeners() {
-    $registrationForm.on('submit', handleRegistration);
-    $showParticipantsBtn.on('click', toggleParticipantsTable);
-    $startDrawBtn.on('click', startDraw);
-    $resetBtn.on('click', resetAll);
-    $closeWheelBtn.on('click', closeWheel);
+    $('#registration-form').on('submit', handleRegistration);
+    $('#toggle-participants-btn').on('click', toggleParticipantsTable);
+    $('#reset-btn').on('click', resetAll);
+    $('#go-to-draw-btn').on('click', () => showPage('draw-page'));
+    $('#back-to-admin-btn').on('click', () => showPage('admin-page'));
+    $('#start-spin-btn').on('click', startDraw);
+    $('#close-winner-btn').on('click', closeWinnerOverlay);
 }
 
+function showPage(pageId) {
+    $('.page').removeClass('active').addClass('hidden');
+    $('#' + pageId).removeClass('hidden').addClass('active');
+    
+    if(pageId === 'admin-page') updateParticipantsTable();
+    if(pageId === 'draw-page') drawWheel(); // Redessiner la roue au cas où
+}
+
+// --- INSCRIPTION ---
 function handleRegistration(e) {
     e.preventDefault();
-    
     const prenom = $('#prenom').val().trim();
     const nom = $('#nom').val().trim();
     const email = $('#email').val().trim();
     
-    const newParticipant = {
+    participants.push({
         id: participants.length + 1,
-        prenom: prenom,
-        nom: nom,
-        email: email,
+        prenom, nom, email,
         timestamp: new Date().toISOString()
-    };
-    
-    participants.push(newParticipant);
+    });
     localStorage.setItem('participants', JSON.stringify(participants));
     
-    $registrationForm[0].reset(); // Reset natif du formulaire
-    $confirmationMessage.removeClass('hidden');
-    
-    setTimeout(() => {
-        $confirmationMessage.addClass('hidden');
-    }, 3000);
+    $('#registration-form')[0].reset();
+    $('#confirmation-message').removeClass('hidden');
+    setTimeout(() => $('#confirmation-message').addClass('hidden'), 3000);
 }
 
-function showAdminPage() {
-    $registrationPage.removeClass('active').addClass('hidden');
-    $adminPage.removeClass('hidden').addClass('active');
-    updateParticipantsTable();
-}
-
+// --- ADMIN ---
 function toggleParticipantsTable() {
-    $participantsTable.toggleClass('hidden');
-    if (!$participantsTable.hasClass('hidden')) {
+    $('#participants-table-container').toggleClass('hidden');
+    if (!$('#participants-table-container').hasClass('hidden')) {
         updateParticipantsTable();
     }
 }
 
 function updateParticipantsTable() {
-    $participantsBody.empty();
-    $participantCount.text(participants.length);
+    $('#participants-body').empty();
+    $('#participant-count').text(participants.length);
     
-    // Boucle jQuery plus concise
-    $.each(participants, function(index, p) {
-        $participantsBody.append(`
-            <tr>
-                <td>${p.id}</td>
-                <td>${p.prenom}</td>
-                <td>${p.nom}</td>
-                <td>${p.email}</td>
-            </tr>
+    $.each(participants, function(i, p) {
+        $('#participants-body').append(`
+            <tr><td>${p.id}</td><td>${p.prenom}</td><td>${p.nom}</td><td>${p.email}</td></tr>
         `);
     });
 }
 
+function resetAll() {
+    if(confirm('Supprimer TOUS les participants ?')) {
+        participants = [];
+        localStorage.removeItem('participants');
+        updateParticipantsTable();
+        $('#participants-table-container').addClass('hidden');
+    }
+}
+
+// --- ROUE & TIRAGE ---
 function startDraw() {
-    if (participants.length === 0) {
-        alert('Aucun participant inscrit !');
+    if (participants.length < 2) {
+        alert('Il faut au moins 2 participants pour lancer la roue !');
         return;
     }
+    if (isSpinning) return;
     
-    $participantsTable.addClass('hidden');
-    $wheelContainer.removeClass('hidden');
-    
-    drawWheel();
+    $('#start-spin-btn').addClass('hidden'); // Cacher le bouton pendant le spin
+    isSpinning = true;
     spinWheel();
 }
 
 function drawWheel() {
-    const ctx = $wheelCanvas[0].getContext('2d');
-    const centerX = $wheelCanvas.width() / 2;
-    const centerY = $wheelCanvas.height() / 2;
+    const canvas = $('#wheel')[0];
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
     const radius = Math.min(centerX, centerY) - 10;
-    const sliceAngle = (2 * Math.PI) / participants.length;
     
-    const colors = [
-        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-        '#FF9F40', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'
-    ];
-    
-    ctx.clearRect(0, 0, $wheelCanvas.width(), $wheelCanvas.height());
+    // Si pas de participants, roue vide ou grise
+    if (participants.length === 0) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#eee';
+        ctx.fill();
+        return;
+    }
 
-    $.each(participants, function(index, participant) {
+    const sliceAngle = (2 * Math.PI) / participants.length;
+
+    $.each(participants, function(index) {
         const startAngle = index * sliceAngle;
         const endAngle = (index + 1) * sliceAngle;
         
@@ -130,38 +130,27 @@ function drawWheel() {
         ctx.arc(centerX, centerY, radius, startAngle, endAngle);
         ctx.closePath();
         
-        ctx.fillStyle = colors[index % colors.length];
+        ctx.fillStyle = wheelColors[index % wheelColors.length];
         ctx.fill();
         ctx.stroke();
-        
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(startAngle + sliceAngle / 2);
-        ctx.textAlign = 'right';
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 12px Arial';
-        ctx.fillText(participant.prenom, radius - 10, 4);
-        ctx.restore();
+        // PAS DE TEXTE ici comme demandé
     });
 }
 
 function spinWheel() {
-    if (isSpinning) return;
-    isSpinning = true;
-    
     const spinDuration = 15000; // 15 secondes
     const startTime = Date.now();
-    const totalRotations = 10;
+    const totalRotations = 15; // Plus de rotations pour l'effet
     const startRotation = currentRotation;
+    // Aléatoire final
     const targetRotation = startRotation + (totalRotations * 2 * Math.PI) + (Math.random() * 2 * Math.PI);
     
     function animate() {
         const elapsed = Date.now() - startTime;
         const progress = Math.min(elapsed / spinDuration, 1);
-        
         const easeOut = 1 - Math.pow(1 - progress, 3);
-        currentRotation = startRotation + (targetRotation - startRotation) * easeOut;
         
+        currentRotation = startRotation + (targetRotation - startRotation) * easeOut;
         drawWheelWithRotation(currentRotation);
         
         if (progress < 1) {
@@ -171,84 +160,60 @@ function spinWheel() {
             showWinner(currentRotation);
         }
     }
-    
     animate();
 }
 
 function drawWheelWithRotation(rotation) {
-    const ctx = $wheelCanvas[0].getContext('2d');
-    ctx.clearRect(0, 0, $wheelCanvas.width(), $wheelCanvas.height());
+    const canvas = $('#wheel')[0];
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     ctx.save();
-    ctx.translate($wheelCanvas.width() / 2, $wheelCanvas.height() / 2);
+    ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate(rotation);
-    ctx.translate(-$wheelCanvas.width() / 2, -$wheelCanvas.height() / 2);
+    ctx.translate(-canvas.width / 2, -canvas.height / 2);
     
     drawWheel();
-    
     ctx.restore();
 }
 
 function showWinner(finalRotation) {
     const sliceAngle = (2 * Math.PI) / participants.length;
     const normalizedRotation = finalRotation % (2 * Math.PI);
+    // Calcul de l'index gagnant basé sur la flèche en haut (3PI/2)
     const pointerAngle = (3 * Math.PI / 2 - normalizedRotation + 2 * Math.PI) % (2 * Math.PI);
     const winningIndex = Math.floor(pointerAngle / sliceAngle) % participants.length;
     
     const winner = participants[winningIndex];
     
-    $winnerName.text(`${winner.prenom} ${winner.nom}`);
-    $winnerDisplay.removeClass('hidden');
-    $closeWheelBtn.removeClass('hidden');
+    // Affichage Pop-up
+    $('#winner-name').text(`${winner.prenom} ${winner.nom}`);
+    $('#winner-overlay').removeClass('hidden');
     
+    // Confettis (optionnel, gardé simple)
     createConfetti();
 }
 
-function closeWheel() {
-    $wheelContainer.addClass('hidden');
-    $winnerDisplay.addClass('hidden');
-    $closeWheelBtn.addClass('hidden');
-    $participantsTable.removeClass('hidden');
-    currentRotation = 0;
-}
-
-function resetAll() {
-    if (confirm('Êtes-vous sûr de vouloir supprimer tous les participants ?')) {
-        participants = [];
-        localStorage.removeItem('participants');
-        updateParticipantsTable();
-        $wheelContainer.addClass('hidden');
-        $winnerDisplay.addClass('hidden');
-    }
+function closeWinnerOverlay() {
+    $('#winner-overlay').addClass('hidden');
+    $('#start-spin-btn').removeClass('hidden');
+    currentRotation = 0; // Reset visuel si besoin
+    drawWheel(); // Redessiner droit
 }
 
 function createConfetti() {
-    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
-    
-    for (let i = 0; i < 100; i++) {
-        const confetti = $('<div></div>');
-        confetti.css({
-            position: 'fixed',
-            width: '10px',
-            height: '10px',
+    const colors = ['#800020', '#D4AF37', '#FBF8F3', '#ff0000', '#gold'];
+    for (let i = 0; i < 80; i++) {
+        const conf = $('<div></div>').css({
+            position: 'fixed', width: '10px', height: '10px',
             backgroundColor: colors[Math.floor(Math.random() * colors.length)],
-            left: Math.random() * 100 + 'vw',
-            top: '-10px',
-            zIndex: '1000',
+            left: Math.random() * 100 + 'vw', top: '-10px', zIndex: '2000',
             borderRadius: Math.random() > 0.5 ? '50%' : '0'
         });
-        
-        $('body').append(confetti);
-        
-        confetti.animate({
-            top: '100vh',
-            transform: `rotate(${Math.random() * 720}deg)`
-        }, {
+        $('body').append(conf);
+        conf.animate({ top: '100vh', transform: `rotate(${Math.random()*720}deg)` }, {
             duration: 2000 + Math.random() * 2000,
-            easing: 'swing',
-            complete: function() {
-                $(this).remove();
-            }
+            complete: function() { $(this).remove(); }
         });
     }
 }
