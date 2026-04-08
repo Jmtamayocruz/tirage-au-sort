@@ -5,14 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteo - Tirage au sort</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container">
         
         <!-- PAGE 1: Formulaire d'inscription -->
         <div id="registration-page" class="page active">
-            <h1>Inscrivez-vous au concours</h1>
+            <h1>Inscrivez-vous au concours!</h1>
             <form id="registration-form">
                 <div class="form-group">
                     <label for="prenom">Prénom</label>
@@ -33,12 +32,12 @@
 
         <!-- PAGE 2: Administration -->
         <div id="admin-page" class="page hidden">
-            <h1>Panel de Administración</h1>
-            <p class="subtitle">Gestion des participants</p>
+            <h1>On arrive au jeu !</h1>
+            <p class="subtitle">Tout le monde est inscrit ? Si oui, on passe au tirage !</p>
             
             <div class="admin-controls">
-                <button id="toggle-participants-btn" class="btn-secondary">Voir/Masquer la liste</button>
-                <button id="go-to-draw-btn" class="btn-primary">Aller à l'écran de tirage</button>
+                <button id="toggle-participants-btn" class="btn-secondary">Les participants</button>
+                <button id="go-to-draw-btn" class="btn-primary">¡ LA RULETA !</button>
                 <button id="reset-btn" class="btn-danger">Tout effacer</button>
             </div>
 
@@ -58,8 +57,8 @@
         <!-- PAGE 3: Écran de Tirage (Nouveau) -->
         <div id="draw-page" class="page hidden">
             <div class="draw-header">
-                <h1>Tirage au sort</h1>
-                <button id="back-to-admin-btn" class="btn-small">Retour Admin</button>
+                <h1>¡ La ruleta Brilla !</h1>
+                <button id="back-to-admin-btn" class="btn-small">Retour "On arrive au jeu !"</button>
             </div>
 
             <div class="wheel-scene">
@@ -74,7 +73,7 @@
             <!-- Pop-up Gagnant (Overlay) -->
             <div id="winner-overlay" class="hidden">
                 <div class="winner-card">
-                    <h2 class="winner-title">El ganador es:</h2>
+                    <h2 class="winner-title">¡ EL GANADOR ES:</h2>
                     <div class="winner-name-display" id="winner-name"></div>
                     <button id="close-winner-btn" class="btn-secondary">Fermer</button>
                 </div>
@@ -82,6 +81,7 @@
         </div>
 
     </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
