@@ -1,110 +1,105 @@
+/* IMPORTATION DES POLICES GOOGLE FONTS */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Playfair+Display:wght@700;800;900&display=swap');
+
 :root {
-    --primary: #800020;
-    --bg-light: #FBF8F3;
-    --accent: #D4AF37;
-    --dark: #2c0509;
+    /* PALETTE DE COULEURS OFFICIELLE */
+    --crimson: #7a0c1e;
+    --deep-red: #5a0a16;
+    --gold: #c8962a;
+    --gold-light: #e8b84b;
+    --gold-pale: #f5e0a0;
+    --cream: #fdf6ec;
+    --white: #ffffff;
+    --dark: #1a0a05;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
 
 body {
     min-height: 100vh;
-    /* Le fond dégradé est maintenant sur le body, visible autour de la carte blanche */
-    background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+    /* Fond dégradé */
+    background: linear-gradient(135deg, var(--dark) 0%, var(--crimson) 100%);
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: hidden;
+    /* Police par défaut pour le corps (sera écrasée par les sélecteurs spécifiques) */
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--dark);
 }
 
 .main-wrapper {
     width: 100%;
-    max-width: 700px; /* Un peu plus large pour la roue */
+    max-width: 700px;
     padding: 20px;
     text-align: center;
 }
 
-.view { display: none; animation: fadeIn 0.5s; }
-.view.active { display: block; }
+.view { display: none; }
+.view.active { display: block; animation: fadeIn 0.5s; }
 .hidden { display: none !important; }
 
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
 
-/* STYLE COMMUN DES CARTES (Formulaire & Roue) */
+/* CARTE PRINCIPALE */
 .card {
-    background: rgba(255, 255, 255, 0.98); /* Blanc opaque pour faire ressortir la roue */
+    background: var(--cream);
     padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-    border: 4px solid var(--accent); /* Bordure dorée pour le côté "Brilla" */
+    box-shadow: 0 15px 40px rgba(26, 10, 5, 0.5);
+    border: 4px solid var(--gold);
     position: relative;
     overflow: hidden;
 }
 
+/* TITRES : Playfair Display (Gras, Luxueux) */
 h1 { 
-    color: var(--primary); 
+    font-family: 'Playfair Display', serif;
+    font-weight: 800; /* ExtraBold */
+    color: var(--deep-red); 
     margin-bottom: 25px; 
-    font-size: 2.2em; 
+    font-size: 2.4em; 
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    line-height: 1.1;
+}
+
+/* TEXTES COURANTS : Cormorant Garamond */
+p, label, input, .status-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    font-size: 1.2rem;
+}
+
+#status-db {
+    margin-top: 15px; 
+    font-size: 1.1rem; 
+    color: var(--deep-red); 
+    font-weight: 600; /* Semi-bold pour la lisibilité */
+    font-family: 'Cormorant Garamond', serif;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
-
-/* STYLE SPÉCIFIQUE FORMULAIRE */
-.input-group { margin-bottom: 20px; text-align: left; }
-label { display: block; margin-bottom: 8px; color: var(--dark); font-weight: bold; }
-input {
-    width: 100%; padding: 12px;
-    border: 2px solid #ddd; border-radius: 8px;
-    font-size: 16px;
-}
-input:focus { outline: none; border-color: var(--primary); }
-
-button[type="submit"], #btn-spin {
-    width: 100%;
-    padding: 15px;
-    border: none; border-radius: 8px;
-    font-size: 18px; font-weight: bold; color: white;
-    cursor: pointer;
-    background: linear-gradient(90deg, var(--primary) 0%, #a00028 100%);
-    transition: transform 0.2s, box-shadow 0.2s;
-    text-transform: uppercase;
-    box-shadow: 0 4px 15px rgba(128, 0, 32, 0.3);
-}
-
-button[type="submit"]:hover, #btn-spin:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(128, 0, 32, 0.5);
-}
-
-#success-msg {
-    margin-top: 20px; color: #28a745; font-weight: bold; font-size: 1.2em;
-}
-
-/* BOUTON DEBUG ( discret ) */
-.btn-debug {
-    margin-top: 20px;
-    background: transparent;
-    border: 1px solid #ccc;
-    color: #999;
-    font-size: 12px;
-    padding: 5px 10px;
-    width: auto;
-    box-shadow: none;
-}
-.btn-debug:hover { background: #f0f0f0; color: #666; transform: none; }
 
 /* CONTENEUR ROUE */
 .wheel-container {
     position: relative;
     width: 400px;
     height: 400px;
-    margin: 0 auto 30px auto; /* Centré avec marge en bas */
+    margin: 0 auto 30px auto;
 }
 
 #wheel-canvas {
     width: 100%;
     height: 100%;
-    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
     animation: float 3s ease-in-out infinite;
 }
 
@@ -120,19 +115,33 @@ button[type="submit"]:hover, #btn-spin:hover {
     width: 0; height: 0;
     border-left: 25px solid transparent;
     border-right: 25px solid transparent;
-    border-top: 50px solid var(--primary); /* Pointe Bordeaux */
+    border-top: 50px solid var(--deep-red);
     z-index: 10;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 
+/* BOUTON : Playfair Display */
 #btn-spin {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
     width: auto;
     padding: 15px 50px;
-    font-size: 20px;
+    font-size: 1.4rem;
     border-radius: 50px;
-    background: linear-gradient(90deg, var(--accent) 0%, #f0c020 100%);
-    color: var(--primary);
-    display: inline-block;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+    color: var(--dark);
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(200, 150, 42, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#btn-spin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(200, 150, 42, 0.6);
+    background: linear-gradient(90deg, var(--gold-light) 0%, var(--gold) 100%);
 }
 
 /* POP-UP GAGNANT */
@@ -144,7 +153,7 @@ button[type="submit"]:hover, #btn-spin:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(-45deg, #800020, #ff4d4d, #D4AF37, #2c0509);
+    background: linear-gradient(-45deg, var(--crimson), var(--deep-red), var(--gold), var(--dark));
     background-size: 400% 400%;
     animation: gradientMove 5s ease infinite;
 }
@@ -156,35 +165,69 @@ button[type="submit"]:hover, #btn-spin:hover {
 }
 
 .winner-card {
-    background: white;
+    background: var(--cream);
     padding: 60px 40px;
     border-radius: 20px;
     text-align: center;
+    border: 5px solid var(--gold);
     box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    border: 5px solid var(--accent);
     animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     max-width: 90%;
     width: 600px;
 }
 
-.winner-title { font-size: 2em; color: var(--primary); margin-bottom: 20px; line-height: 1.2; }
+/* TITRE POPUP : Playfair Display */
+.winner-title { 
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 2.2em; 
+    color: var(--deep-red); 
+    margin-bottom: 20px; 
+    line-height: 1.2; 
+    text-transform: uppercase;
+}
+
+/* NOM GAGNANT : Playfair Display (Très grand) */
 .winner-name {
-    font-size: 3.5em;
-    font-weight: 900;
+    font-family: 'Playfair Display', serif;
+    font-weight: 900; /* Black */
+    font-size: 4em;
     color: var(--dark);
     text-transform: uppercase;
     margin: 20px 0;
     line-height: 1.1;
     word-wrap: break-word;
+    letter-spacing: 2px;
 }
-.winner-subtitle { font-size: 1.5em; color: #666; margin-top: 20px; font-style: italic; }
 
-@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* SOUS-TITRE POPUP : Cormorant Garamond (Italique) */
+.winner-subtitle { 
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.8rem; 
+    color: var(--deep-red); 
+    margin-top: 20px; 
+    opacity: 0.9;
+}
+
+@keyframes popIn { 
+    from { transform: scale(0.5); opacity: 0; } 
+    to { transform: scale(1); opacity: 1; } 
+}
 
 /* Confettis */
 .confetti {
     position: absolute;
     width: 10px; height: 10px;
-    background: #fff;
     z-index: 10000;
+}
+
+/* Responsive : Ajustement des tailles de police sur mobile */
+@media (max-width: 600px) {
+    h1 { font-size: 1.8em; }
+    .winner-title { font-size: 1.6em; }
+    .winner-name { font-size: 2.5em; }
+    #btn-spin { font-size: 1.1rem; padding: 12px 30px; }
+    .card { padding: 25px; }
 }
