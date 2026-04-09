@@ -12,34 +12,8 @@
 
     <div class="main-wrapper">
         
-        <!-- ZONE 1: FORMULAIRE -->
-        <div id="view-form" class="view active">
-            <div class="card">
-                <h1>Inscription</h1>
-                <form id="registration-form">
-                    <div class="input-group">
-                        <label>Prénom</label>
-                        <input type="text" id="prenom" required autocomplete="off">
-                    </div>
-                    <div class="input-group">
-                        <label>Nom</label>
-                        <input type="text" id="nom" required autocomplete="off">
-                    </div>
-                    <div class="input-group">
-                        <label>E-mail</label>
-                        <input type="email" id="email" required autocomplete="off">
-                    </div>
-                    <button type="submit">S'inscrire</button>
-                </form>
-                <div id="success-msg" class="hidden">¡Inscrito con éxito!</div>
-                
-                <!-- Bouton temporaire pour basculer vers la roue pendant les tests -->
-                <button id="debug-go-to-wheel" class="btn-debug">[TEST: Aller à la roue]</button>
-            </div>
-        </div>
-
-        <!-- ZONE 2: ROUE DE TIRAGE (Entourée d'une .card comme le formulaire) -->
-        <div id="view-wheel" class="view hidden">
+        <!-- UNIQUEMENT LA VUE ROUE -->
+        <div id="view-wheel" class="view active">
             <div class="card wheel-card">
                 <h1>¡ La ruleta Brilla !</h1>
                 
@@ -49,6 +23,9 @@
                 </div>
                 
                 <button id="btn-spin">LANCER LE TIRAGE</button>
+                <div id="status-db" style="margin-top:15px; font-size:0.9em; color:#800020; font-weight:bold;">
+                    Connexion à la base de données...
+                </div>
             </div>
         </div>
 
