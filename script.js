@@ -30,7 +30,7 @@ $(document).ready(function() {
     $('#registration-form').on('submit', function(e) {
         e.preventDefault();
         
-        const $$btn = $$(this).find('button');
+        const $btn = $(this).find('button');
         const originalText = $btn.text();
         $btn.text("Envoi en cours...").prop('disabled', true);
 
