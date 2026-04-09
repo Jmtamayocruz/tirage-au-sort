@@ -1,77 +1,68 @@
-var SHEET_NAME = "Feuille 1"; // IMPORTANT: Vérifiez le nom de l'onglet en bas de votre sheet (souvent "Feuille 1" ou "Sheet1")
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡ La Ruleta Brilla !</title>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-function doGet(e) {
-  return handleRequest(e);
-}
+    <div class="main-wrapper">
+        
+        <!-- ZONE 1: FORMULAIRE -->
+        <div id="view-form" class="view active">
+            <div class="card">
+                <h1>Inscription</h1>
+                <form id="registration-form">
+                    <div class="input-group">
+                        <label>Prénom</label>
+                        <input type="text" id="prenom" required autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Nom</label>
+                        <input type="text" id="nom" required autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>E-mail</label>
+                        <input type="email" id="email" required autocomplete="off">
+                    </div>
+                    <button type="submit">S'inscrire</button>
+                </form>
+                <div id="success-msg" class="hidden">¡Inscrito con éxito!</div>
+                
+                <!-- Bouton temporaire pour basculer vers la roue pendant les tests -->
+                <button id="debug-go-to-wheel" class="btn-debug">[TEST: Aller à la roue]</button>
+            </div>
+        </div>
 
-function doPost(e) {
-  return handleRequest(e);
-}
+        <!-- ZONE 2: ROUE DE TIRAGE (Entourée d'une .card comme le formulaire) -->
+        <div id="view-wheel" class="view hidden">
+            <div class="card wheel-card">
+                <h1>¡ La ruleta Brilla !</h1>
+                
+                <div class="wheel-container">
+                    <canvas id="wheel-canvas" width="500" height="500"></canvas>
+                    <div class="pointer"></div>
+                </div>
+                
+                <button id="btn-spin">LANCER LE TIRAGE</button>
+            </div>
+        </div>
 
-function handleRequest(e) {
-  var lock = LockService.getScriptLock();
-  lock.tryLock(10000);
+    </div>
 
-  try {
-    var doc = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = doc.getSheetByName(SHEET_NAME);
-    
-    // Si l'onglet n'existe pas, on prend le premier
-    if (!sheet) {
-      sheet = doc.getSheets()[0];
-      SHEET_NAME = sheet.getName();
-    }
+    <!-- POP-UP GAGNANT -->
+    <div id="winner-overlay" class="hidden">
+        <div class="winner-card">
+            <h1 class="winner-title">¡ Y el ganador o ganadora es :</h1>
+            <div class="winner-name" id="winner-name-display"></div>
+            <p class="winner-subtitle">¡Felicidades!</p>
+        </div>
+    </div>
 
-    var action = e.parameter.action;
-
-    // --- LECTURE DES DONNÉES (Pour la roue) ---
-    if (action == "read" || !action) {
-      var rows = sheet.getDataRange().getValues();
-      var data = [];
-      // On commence à i=1 pour sauter les en-têtes
-      for (var i = 1; i < rows.length; i++) {
-        if(rows[i][1] != "") { // Si le prénom n'est pas vide
-          data.push({
-            id: i,
-            prenom: rows[i][1],
-            nom: rows[i][2],
-            email: rows[i][3]
-          });
-        }
-      }
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success", "data": data }))
-        .setMimeType(ContentService.MimeType.JSON);
-    } 
-    
-    // --- AJOUT D'UN PARTICIPANT (Depuis le mobile) ---
-    else if (action == "add") {
-      var incoming = JSON.parse(e.postData.contents);
-      
-      sheet.appendRow([
-        new Date(),
-        incoming.prenom,
-        incoming.nom,
-        incoming.email
-      ]);
-      
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success", "message": "Ajouté" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // --- EFFACER TOUT (Optionnel, pour reset) ---
-    else if (action == "reset") {
-      var lastRow = sheet.getLastRow();
-      if (lastRow > 1) {
-        sheet.deleteRows(2, lastRow - 1);
-      }
-      return ContentService.createTextOutput(JSON.stringify({ "result": "success", "message": "Vidé" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-  } catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": e.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    lock.releaseLock();
-  }
-}
+    <script src="script.js"></script>
+</body>
+</html>
