@@ -249,4 +249,36 @@ $(document).ready(function() {
                 const velocity = Math.random() * 400 + 150; 
                 
                 const destX = Math.cos(angle) * velocity;
-                const destY = Math
+                const destY = Math.sin(angle) * velocity;
+                const rotate = Math.random() * 720 - 360;
+                
+                conf.animate({
+                    left: '+=' + destX + 'px',
+                    top: '+=' + destY + 'px',
+                    opacity: 0,
+                    transform: `rotate(${rotate}deg)`
+                }, Math.random() * 1000 + 1000, function() {
+                    $(this).remove();
+                });
+            }
+        }
+
+        // Boucle de lancement des explosions
+        const intervalId = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            
+            if (elapsed >= totalDuration) {
+                clearInterval(intervalId);
+                return;
+            }
+
+            createExplosion();
+            
+            // Parfois, doubler l'explosion pour plus d'intensité
+            if (Math.random() > 0.3) {
+                setTimeout(createExplosion, 150);
+            }
+
+        }, 700); // Une explosion toutes les 700ms
+    }
+});
